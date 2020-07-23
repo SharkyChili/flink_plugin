@@ -29,7 +29,7 @@ class Master(Script):
             group=params.flink_group,
             content=''
     )
-    Execute('useradd  -d /home/flink  -g flink flink')
+    Execute('useradd  -d /home/flink -m -g flink flink')
 
          
     
