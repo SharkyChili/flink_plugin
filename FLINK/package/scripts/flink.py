@@ -43,9 +43,12 @@ class Master(Script):
         #flink_log_dir：/var/log/flink
         #flink_log_file： os.path.join(flink_log_dir,'flink-setup.log')
         #flink_user：flink
-        #下载压缩包
+        #下载压缩包并命名为/tmp/flink.tgz
         #wget http://192.168.193.129/flink/flink-1.9.0-bin-scala_2.11.tgz -O /tmp/flink.tgz -a /var/log/flink/flink-setup.log (user=flink)
         Execute('wget '+params.flink_download_url+' -O '+params.temp_file+' -a '  + params.flink_log_file, user=params.flink_user)
+
+        if os.path.exists(params.flink_install_dir)==False:
+          os.makedirs(params.flink_install_dir)
 
         #flink_install_dir:/opt/flink
         #解压压缩包
@@ -54,7 +57,7 @@ class Master(Script):
 
         #移动压缩包
         #mv /opt/flink/*/* /opt/flink
-        Execute('mv '+params.flink_install_dir+'/*/* ' + params.flink_install_dir, user=params.flink_user)
+        #Execute('mv '+params.flink_install_dir+'/*/* ' + params.flink_install_dir, user=params.flink_user)
                 
       #update the configs specified by user
       self.configure(env, True)
@@ -79,6 +82,45 @@ class Master(Script):
       
       #update the configs specified by user
       self.configure(env, True)
+
+  #如何启动服务。我这是先检测服务允许状态，再通过脚本启动
+  # （这个脚本我是打包到rpm包里面的，安装时就放到相关的文件夹中了。而且脚本有维护pid操作）
+  def start(self, env):
+    import params
+    import status_params
+    self.set_conf_bin(env)
+    self.configure(env)
+
+    #flink
+    self.create_hdfs_user(params.flink_user)
+
+    #这两句就是显示一下
+    #''
+    Execute('echo bin dir ' + params.bin_dir)
+    #/var/run/flink/flink.pid
+    Execute('echo pid file ' + status_params.flink_pid_file)
+
+    cmd = format("export HADOOP_CONF_DIR={hadoop_conf_dir}; {bin_dir}/yarn-session.sh -n {flink_numcontainers} -s {flink_numberoftaskslots} -jm {flink_jobmanager_memory} -tm {flink_container_memory} -qu {flink_queue} -nm {flink_appname} -d")
+    #这里是false，不用看了
+    if params.flink_streaming:
+      cmd = cmd + ' -st '
+
+    #先注册环境变量
+    #export HADOOP_CONF_DIR=/etc/hadoop/conf;
+
+    #然后执行
+    # /yarn-session.sh -n 1 -s 1 -jm 768 -tm 1024 -qu default -nm flinkapp-from-ambari -d
+    # >> /var/log/flink/flink-setup.log (user=flink)
+    Execute (cmd + format(" >> {flink_log_file}"), user=params.flink_user)
+
+    # 参考  echo "aa bb cc" | awk -F '{print $1}' 结果就是aa，意思是把字符串按空格分割，取第一个
+    #yarn application -list 2>/dev/null | awk '/flinkapp-from-ambari/ {print $1}' | head -n1 > /var/run/flink/flink.pid
+    Execute("yarn application -list 2>/dev/null | awk '/" + params.flink_appname + "/ {print $1}' | head -n1 > " + status_params.flink_pid_file, user=params.flink_user)
+    #Execute('chown '+params.flink_user+':'+params.flink_group+' ' + status_params.flink_pid_file)
+
+    #temp_file:'/tmp/flink.tgz'
+    if os.path.exists(params.temp_file):
+      os.remove(params.temp_file)
 
   
   #安装完成后，做的一些配置信息，比如根据模版信息生成相关文件、生成相关的文件夹，改变用户组和权限等等
@@ -120,44 +162,7 @@ class Master(Script):
 
     Execute('rm ' + status_params.flink_pid_file, ignore_failures=True)
  
-  #如何启动服务。我这是先检测服务允许状态，再通过脚本启动
-  # （这个脚本我是打包到rpm包里面的，安装时就放到相关的文件夹中了。而且脚本有维护pid操作）
-  def start(self, env):
-    import params
-    import status_params
-    self.set_conf_bin(env)  
-    self.configure(env) 
 
-    #flink
-    self.create_hdfs_user(params.flink_user)
-
-    #这两句就是显示一下
-    #''
-    Execute('echo bin dir ' + params.bin_dir)
-    #/var/run/flink/flink.pid
-    Execute('echo pid file ' + status_params.flink_pid_file)
-
-    cmd = format("export HADOOP_CONF_DIR={hadoop_conf_dir}; {bin_dir}/yarn-session.sh -n {flink_numcontainers} -s {flink_numberoftaskslots} -jm {flink_jobmanager_memory} -tm {flink_container_memory} -qu {flink_queue} -nm {flink_appname} -d")
-    #这里是false，不用看了
-    if params.flink_streaming:
-      cmd = cmd + ' -st '
-
-    #先注册环境变量
-    #export HADOOP_CONF_DIR=/etc/hadoop/conf;
-
-    #然后执行
-    # /yarn-session.sh -n 1 -s 1 -jm 768 -tm 1024 -qu default -nm flinkapp-from-ambari -d
-    # >> /var/log/flink/flink-setup.log (user=flink)
-    Execute (cmd + format(" >> {flink_log_file}"), user=params.flink_user)
-
-    # 参考  echo "aa bb cc" | awk -F '{print $1}' 结果就是aa，意思是把字符串按空格分割，取第一个
-    #yarn application -list 2>/dev/null | awk '/flinkapp-from-ambari/ {print $1}' | head -n1 > /var/run/flink/flink.pid
-    Execute("yarn application -list 2>/dev/null | awk '/" + params.flink_appname + "/ {print $1}' | head -n1 > " + status_params.flink_pid_file, user=params.flink_user)
-    #Execute('chown '+params.flink_user+':'+params.flink_group+' ' + status_params.flink_pid_file)
-
-    #temp_file:'/tmp/flink.tgz'
-    if os.path.exists(params.temp_file):
-      os.remove(params.temp_file)
 
   def check_flink_status(self, pid_file):
     from datetime import datetime 
@@ -192,6 +197,8 @@ class Master(Script):
   def set_conf_bin(self, env):
     import params
     if params.setup_prebuilt:
+      #true
+      #/opt/flink
       params.conf_dir =  params.flink_install_dir+ '/conf'
       params.bin_dir =  params.flink_install_dir+ '/bin'
     else:

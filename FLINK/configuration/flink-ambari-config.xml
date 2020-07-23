@@ -64,7 +64,8 @@
 
   <property>
     <name>hadoop_conf_dir</name>
-    <value>/etc/hadoop/conf</value>
+    <!--<value>/etc/hadoop/conf</value>-->
+    <value>/etc/hadoop/3.1.0.0-78/0</value>
     <description>Hadoop conf dir. Needed to submit to YARN</description>
   </property>   
 
