@@ -89,6 +89,11 @@ class Master(Script):
     env.set_params(status_params)
     
     self.set_conf_bin(env)
+
+    #Applying File['/opt/flink/conf/flink-conf.yaml'] failed, parent directory /opt/flink/conf doesn't exist
+    #params.flink_install_dir = /opt/flink
+    Execute('mkdir ' + params.flink_install_dir + '/conf')
+
         
     #write out nifi.properties
     properties_content=InlineTemplate(params.flink_yaml_content)
