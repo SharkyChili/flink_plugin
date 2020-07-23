@@ -93,7 +93,7 @@ class Master(Script):
     #Applying File['/opt/flink/conf/flink-conf.yaml'] failed, parent directory /opt/flink/conf doesn't exist
     #params.flink_install_dir = /opt/flink
     #这里tm的已经存在了。。。。卧槽
-    #Execute('mkdir ' + params.flink_install_dir + '/conf')
+    Execute('mkdir ' + params.flink_install_dir + '/conf', user=params.flink_user)
 
         
     #write out nifi.properties
