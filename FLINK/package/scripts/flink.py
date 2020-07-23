@@ -1,3 +1,4 @@
+#coding=utf-8
 import sys, os, pwd, grp, signal, time, glob
 from resource_management import *
 from subprocess import call
@@ -155,6 +156,9 @@ class Master(Script):
     try:
       pid = str(sudo.read_file(pid_file)) 
       cmd_line = "/usr/bin/yarn application -list"
+      #shlex.split()可以被用于序列化复杂的命令参数
+      #>>> shlex.split('ls ps top grep pkill')
+      #['ls', 'ps', 'top', 'grep', 'pkill']
       args = shlex.split(cmd_line)
       proc = Popen(args, stdout=PIPE)
       p = str(proc.communicate()[0].split())
