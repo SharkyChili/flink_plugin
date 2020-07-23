@@ -115,11 +115,14 @@ class Master(Script):
     import status_params
     self.set_conf_bin(env)  
     self.configure(env) 
-    
+
+    #flink
     self.create_hdfs_user(params.flink_user)
 
     #这两句就是显示一下
-    Execute('echo bin dir ' + params.bin_dir)        
+    #''
+    Execute('echo bin dir ' + params.bin_dir)
+    #/var/run/flink/flink.pid
     Execute('echo pid file ' + status_params.flink_pid_file)
 
     cmd = format("export HADOOP_CONF_DIR={hadoop_conf_dir}; {bin_dir}/yarn-session.sh -n {flink_numcontainers} -s {flink_numberoftaskslots} -jm {flink_jobmanager_memory} -tm {flink_container_memory} -qu {flink_queue} -nm {flink_appname} -d")
@@ -131,7 +134,7 @@ class Master(Script):
     # >> /var/log/flink/flink-setup.log (user=flink)
     Execute (cmd + format(" >> {flink_log_file}"), user=params.flink_user)
 
-    # echo "aa bb cc" | awk -F '{print $1}' 结果就是aa，意思是把字符串按空格分割，取第一个
+    # 参考  echo "aa bb cc" | awk -F '{print $1}' 结果就是aa，意思是把字符串按空格分割，取第一个
     #yarn application -list 2>/dev/null | awk '/flinkapp-from-ambari/ {print $1}' | head -n1 > /var/run/flink/flink.pid
     Execute("yarn application -list 2>/dev/null | awk '/" + params.flink_appname + "/ {print $1}' | head -n1 > " + status_params.flink_pid_file, user=params.flink_user)
     #Execute('chown '+params.flink_user+':'+params.flink_group+' ' + status_params.flink_pid_file)
@@ -146,6 +149,7 @@ class Master(Script):
     from resource_management.core import sudo
     from subprocess import PIPE,Popen
     import shlex, subprocess
+    #/var/run/flink/flink.pid
     if not pid_file or not os.path.isfile(pid_file):
       raise ComponentIsNotRunning()
     try:
@@ -163,6 +167,7 @@ class Master(Script):
   def status(self, env):
     import status_params       
     from datetime import datetime
+    #/var/run/flink/flink.pid
     self.check_flink_status(status_params.flink_pid_file)
 
   def set_conf_bin(self, env):
