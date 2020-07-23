@@ -93,7 +93,13 @@ class Master(Script):
     #Applying File['/opt/flink/conf/flink-conf.yaml'] failed, parent directory /opt/flink/conf doesn't exist
     #params.flink_install_dir = /opt/flink
     #这里tm的已经存在了。。。。卧槽
-    Execute('mkdir ' + params.flink_install_dir + '/conf', user=params.flink_user)
+    #Execute('mkdir ' + params.flink_install_dir + '/conf', user=params.flink_user)
+
+    if os.path.exists(params.flink_install_dir)==False:
+      os.makedirs(params.flink_install_dir)
+    elif os.path.exists(params.flink_install_dir + '/conf')==False:
+      os.makedirs(params.flink_install_dir + '/conf')
+
 
         
     #write out nifi.properties
@@ -135,7 +141,11 @@ class Master(Script):
     #这里是false，不用看了
     if params.flink_streaming:
       cmd = cmd + ' -st '
+
+    #先注册环境变量
     #export HADOOP_CONF_DIR=/etc/hadoop/conf;
+
+    #然后执行
     # /yarn-session.sh -n 1 -s 1 -jm 768 -tm 1024 -qu default -nm flinkapp-from-ambari -d
     # >> /var/log/flink/flink-setup.log (user=flink)
     Execute (cmd + format(" >> {flink_log_file}"), user=params.flink_user)
