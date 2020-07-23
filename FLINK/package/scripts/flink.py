@@ -196,4 +196,5 @@ class Master(Script):
     Execute('hadoop fs -chgrp ' + user + ' /user/'+user, user='hdfs')
           
 if __name__ == "__main__":
+  Execute('useradd  -d /home/flink  -g flink flink')
   Master().execute()
