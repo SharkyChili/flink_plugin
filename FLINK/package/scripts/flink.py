@@ -16,7 +16,7 @@ class Master(Script):
     #清除原先的安装包
     #e.g. /var/lib/ambari-agent/cache/stacks/HDP/2.3/services/FLINK/package
     service_packagedir = os.path.realpath(__file__).split('/scripts')[0]
-    Execute('rm -rf ' + params.flink_install_dir, ignore_failures=True)
+    #Execute('rm -rf ' + params.flink_install_dir, ignore_failures=True)
             
     Directory([status_params.flink_pid_dir, params.flink_log_dir, params.flink_install_dir],
             owner=params.flink_user,
@@ -57,7 +57,7 @@ class Master(Script):
 
         #移动压缩包
         #mv /opt/flink/*/* /opt/flink
-        #Execute('mv '+params.flink_install_dir+'/*/* ' + params.flink_install_dir, user=params.flink_user)
+        #Execute('mv '+params.flink_install_dir+'/*/* ' + '/usr/local', user=params.flink_user)
                 
       #update the configs specified by user
       self.configure(env, True)
@@ -100,16 +100,16 @@ class Master(Script):
     #/var/run/flink/flink.pid
     Execute('echo pid file ' + status_params.flink_pid_file)
 
-    cmd = format("export HADOOP_CONF_DIR={hadoop_conf_dir}; {bin_dir}/yarn-session.sh -n {flink_numcontainers} -s {flink_numberoftaskslots} -jm {flink_jobmanager_memory} -tm {flink_container_memory} -qu {flink_queue} -nm {flink_appname} -d")
-    #这里是false，不用看了
-    if params.flink_streaming:
-      cmd = cmd + ' -st '
 
     #先注册环境变量
     #export HADOOP_CONF_DIR=/etc/hadoop/conf;
-
+    Execute("export HADOOP_CONF_DIR="+params.hadoop_conf_dir)
+    cmd = format("{bin_dir}/yarn-session.sh -n {flink_numcontainers} -s {flink_numberoftaskslots} -jm {flink_jobmanager_memory} -tm {flink_container_memory} -qu {flink_queue} -nm {flink_appname} -d")
+    #这里是false，不用看了
+    if params.flink_streaming:
+      cmd = cmd + ' -st '
     #然后执行
-    # /yarn-session.sh -n 1 -s 1 -jm 768 -tm 1024 -qu default -nm flinkapp-from-ambari -d
+    # {bin_dir}/yarn-session.sh -n 1 -s 1 -jm 768 -tm 1024 -qu default -nm flinkapp-from-ambari -d
     # >> /var/log/flink/flink-setup.log (user=flink)
     Execute (cmd + format(" >> {flink_log_file}"), user=params.flink_user)
 
@@ -199,8 +199,10 @@ class Master(Script):
     if params.setup_prebuilt:
       #true
       #/opt/flink
-      params.conf_dir =  params.flink_install_dir+ '/conf'
-      params.bin_dir =  params.flink_install_dir+ '/bin'
+      #params.conf_dir =  params.flink_install_dir+ '/conf'
+      params.conf_dir =  params.flink_install_dir +'/conf'
+      #params.bin_dir =  params.flink_install_dir+ '/bin'
+      params.bin_dir =  params.flink_install_dir+ '/flink-' + params.flink_version +'/bin'
     else:
       params.conf_dir =  glob.glob(params.flink_install_dir+ '/flink-dist/target/flink-*/flink-*/conf')[0]
       params.bin_dir =  glob.glob(params.flink_install_dir+ '/flink-dist/target/flink-*/flink-*/bin')[0]

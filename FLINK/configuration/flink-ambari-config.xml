@@ -10,7 +10,13 @@
     <name>flink_install_dir</name>
     <value>/opt/flink</value>
     <description>Location to install Flink</description>
-  </property> 
+  </property>
+
+  <property>
+    <!-- flink安装的地方 -->
+    <name>flink_version</name>
+    <value>1.9.0</value>
+  </property>
 
   <property>
     <name>flink_numcontainers</name>
